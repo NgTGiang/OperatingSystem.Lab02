@@ -3,6 +3,7 @@
 #include <sys/shm.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 /*
  * Reader.c using the pre-shared key SHM_KEY 0x123
