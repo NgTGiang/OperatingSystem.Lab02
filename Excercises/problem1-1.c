@@ -1,3 +1,14 @@
+/*
+There are two files  contains the 100000 ratings of 943 users for 1682 movies in the following format:
+ userID <tab> movieID <tab> rating <tab> timeStamp
+ userID <tab> movieID <tab> rating <tab> timeStamp
+ ...
+ Requirement: 
+    write a C program that spawns two child processes, 
+    and each of them will read a file and compute the average ratings of movies in the file. 
+    You implement the program by using shared memory method. 
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
