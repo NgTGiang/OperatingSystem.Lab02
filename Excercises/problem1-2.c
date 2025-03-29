@@ -23,11 +23,11 @@ There are two files  contains the 100000 ratings of 943 users for 1682 movies in
 #define LINE_LENGTH 256
 
 typedef struct {
-    int movie_count[MAX_MOVIES];
-    double movie_sum[MAX_MOVIES];
+    int movieCount[MAX_MOVIES];
+    double movieSum[MAX_MOVIES];
 } SharedData;
 
-void calculateAverageRatings(const char *filename, SharedData *shared_data) {
+void readFileAndCalculateAverageRatings(const char *filename, SharedData *sharedData) {
     FILE *file = fopen(filename, "r");
     if (!file) {
         perror("Error opening file");
@@ -36,21 +36,21 @@ void calculateAverageRatings(const char *filename, SharedData *shared_data) {
 
     int userID, movieID;
     double rating;
-    char timestamp[20]; // to read the timestamp, though not used
+    char timestamp[9]; // to read the timestamp, though not used
 
     while (fgets(timestamp, sizeof(timestamp), file) != NULL) {
         sscanf(timestamp, "%d\t%d\t%lf", &userID, &movieID, &rating);
-        shared_data->movie_count[movieID]++;
-        shared_data->movie_sum[movieID] += rating;
+        sharedData->movieCount[movieID]++;
+        sharedData->movieSum[movieID] += rating;
     }
 
     fclose(file);
 }
 
-void printAverageRatings(SharedData *shared_data) {
-    for (int i = 1; i < MAX_MOVIES; i++) { // Assuming movie IDs start from 1
-        if (shared_data->movie_count[i] > 0) {
-            double average = shared_data->movie_sum[i] / shared_data->movie_count[i];
+void printAverageRatings(SharedData *sharedData) {
+    for (int i = 1; i <= MAX_MOVIES; i++) { // Assuming movie IDs start from 1
+        if (sharedData->movieCount[i] > 0) {
+            double average = sharedData->movieSum[i] / sharedData->movieCount[i];
             printf("Movie ID: %d, Average Rating: %.2f\n", i, average);
         }
     }
@@ -58,7 +58,7 @@ void printAverageRatings(SharedData *shared_data) {
 
 int main(int argc, char *argv[]) {
     if (argc != 3) {
-        fprintf(stderr, "Usage: %s <file1> <file2>\n", argv[0]);
+        fprintf(stderr, "Mismatch input data. Usage: %s <file1> <file2>\n", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -70,13 +70,13 @@ int main(int argc, char *argv[]) {
     }
 
     // Attach shared memory
-    SharedData *shared_data = (SharedData *)shmat(shmid, NULL, 0);
-    if (shared_data == (SharedData *)(-1)) {
+    SharedData *sharedData = (SharedData *)shmat(shmid, NULL, 0);
+    if (sharedData == (SharedData *)(-1)) {
         perror("shmat");
         return EXIT_FAILURE;
     }
 
-    memset(shared_data, 0, sizeof(SharedData)); // Initialize shared data
+    memset(sharedData, 0, sizeof(SharedData)); // Initialize shared data
 
     pid_t pid1 = fork();
     if (pid1 < 0) {
@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     } else if (pid1 == 0) {
         // First child process
-        calculateAverageRatings(argv[1], shared_data);
+        readFileAndCalculateAverageRatings(argv[1], sharedData);
         exit(EXIT_SUCCESS);
     }
 
@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     } else if (pid2 == 0) {
         // Second child process
-        calculateAverageRatings(argv[2], shared_data);
+        readFileAndCalculateAverageRatings(argv[2], sharedData);
         exit(EXIT_SUCCESS);
     }
 
@@ -103,10 +103,10 @@ int main(int argc, char *argv[]) {
     wait(NULL);
 
     // Print average ratings
-    printAverageRatings(shared_data);
+    printAverageRatings(sharedData);
 
     // Detach and delete shared memory
-    shmdt(shared_data);
+    shmdt(sharedData);
     shmctl(shmid, IPC_RMID, NULL);
 
     return EXIT_SUCCESS;
